@@ -1,6 +1,11 @@
 
-import React from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import React, { useEffect } from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
 
 import Navbar from "../COMPONENTS/Navbar";
 import { CartProvider } from "../COMPONENTS/CartContext";
@@ -21,10 +26,27 @@ const Products = () => <div>Products</div>;
 const Services = () => <div>Services</div>;
 const Cart = () => <div>Cart</div>;
 
+// Scroll to top on every page change
+const ScrollToTop: React.FC = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "instant",
+    });
+  }, [pathname]);
+
+  return null;
+};
+
 const App: React.FC = () => {
   return (
     <BrowserRouter>
       <CartProvider>
+        <ScrollToTop />
+
         <Navbar />
 
         <Routes>

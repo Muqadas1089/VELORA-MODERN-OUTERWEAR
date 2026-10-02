@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Link } from "react-router-dom";
 import { FaArrowRight, FaChevronDown } from "react-icons/fa6";
@@ -26,498 +26,559 @@ const boys = [boy1, boy2, boy3];
 
 const Home: React.FC = () => {
   const [visibleCount, setVisibleCount] = useState(0);
+  const visibleCountRef = useRef(0);
 
-  useEffect(() => {
-    let lastScrollTime = 0;
+  // Hero scroll section reference
+  const heroScrollRef = useRef<HTMLElement | null>(null);
 
-    const handleWheel = (e: WheelEvent) => {
-      const now = Date.now();
+  // =========================================================
+  // HERO SCROLL
+  // =========================================================
 
-      if (now - lastScrollTime < 900) return;
+ useEffect(() => {
+  const section = heroScrollRef.current;
+  if (!section) return;
 
-      // Scroll Down = next pair
-      if (e.deltaY > 0 && visibleCount < 3) {
-        e.preventDefault();
+  let isKeyboardScrolling = false;
 
-        setVisibleCount((prev) => Math.min(prev + 1, 3));
+  const getScrollPosition = (count: number) => {
+    const scrollableHeight =
+      section.offsetHeight - window.innerHeight;
 
-        lastScrollTime = now;
-      }
+    const sectionTop =
+      section.getBoundingClientRect().top + window.scrollY;
 
-      // Scroll Up = previous pair
-      else if (e.deltaY < 0 && visibleCount > 0) {
-        e.preventDefault();
-
-        setVisibleCount((prev) => Math.max(prev - 1, 0));
-
-        lastScrollTime = now;
-      }
-    };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement
-      ) {
-        return;
-      }
-
-      // Arrow Down = next pair
-      if (e.key === "ArrowDown" && visibleCount < 3) {
-        e.preventDefault();
-
-        setVisibleCount((prev) => Math.min(prev + 1, 3));
-      }
-
-      // Arrow Up = previous pair
-      if (e.key === "ArrowUp" && visibleCount > 0) {
-        e.preventDefault();
-
-        setVisibleCount((prev) => Math.max(prev - 1, 0));
-      }
-    };
-
-    window.addEventListener("wheel", handleWheel, { passive: false });
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("wheel", handleWheel);
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [visibleCount]);
-
-  // Button click
-  const handleExplore = () => {
-    if (visibleCount < 3) {
-      setVisibleCount((prev) => prev + 1);
-    } else {
-      setVisibleCount(0);
-    }
+    return (
+      sectionTop +
+      (count / 3) * scrollableHeight
+    );
   };
+
+  const updateVisibleCount = () => {
+    if (isKeyboardScrolling) return;
+
+    const scrollableHeight =
+      section.offsetHeight - window.innerHeight;
+
+    if (scrollableHeight <= 0) return;
+
+    const rect = section.getBoundingClientRect();
+
+    const scrolled = Math.min(
+      Math.max(-rect.top, 0),
+      scrollableHeight
+    );
+
+    const progress = scrolled / scrollableHeight;
+
+    const nextCount = Math.min(
+      3,
+      Math.max(0, Math.round(progress * 3))
+    );
+
+    visibleCountRef.current = nextCount;
+    setVisibleCount(nextCount);
+  };
+
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") {
+      return;
+    }
+
+    // Input fields mein arrow keys normal kaam karengi
+    const target = event.target as HTMLElement;
+
+    if (
+      target.tagName === "INPUT" ||
+      target.tagName === "TEXTAREA" ||
+      target.tagName === "SELECT" ||
+      target.isContentEditable
+    ) {
+      return;
+    }
+
+    const rect = section.getBoundingClientRect();
+
+    // Keyboard control sirf hero section ke andar
+    if (
+      rect.bottom <= 0 ||
+      rect.top >= window.innerHeight
+    ) {
+      return;
+    }
+
+    const currentCount = visibleCountRef.current;
+
+    const nextCount =
+      event.key === "ArrowDown"
+        ? Math.min(3, currentCount + 1)
+        : Math.max(0, currentCount - 1);
+
+    // Last ya first image par normal page scrolling allow karo
+    if (nextCount === currentCount) {
+      return;
+    }
+
+    event.preventDefault();
+
+    visibleCountRef.current = nextCount;
+    setVisibleCount(nextCount);
+
+    isKeyboardScrolling = true;
+
+    window.scrollTo({
+      top: getScrollPosition(nextCount),
+      behavior: "smooth",
+    });
+
+    // Smooth scroll complete hone ke baad scroll listener resume
+    window.setTimeout(() => {
+      isKeyboardScrolling = false;
+      updateVisibleCount();
+    }, 1000);
+  };
+
+  window.addEventListener("scroll", updateVisibleCount, {
+    passive: true,
+  });
+
+  window.addEventListener("keydown", handleKeyDown);
+
+  updateVisibleCount();
+
+  return () => {
+    window.removeEventListener("scroll", updateVisibleCount);
+    window.removeEventListener("keydown", handleKeyDown);
+  };
+}, []);
 
   return (
     <>
       {/* =========================================================
-          HERO SECTION
+          HERO SCROLL AREA
       ========================================================= */}
 
-      <main className="relative h-[calc(100vh-84px)] min-h-[650px] overflow-hidden bg-[#24231F] text-[#F4F0E8]">
+      <section
+        ref={heroScrollRef}
+        className="relative h-[300vh] w-full bg-[#24231F]"
+      >
+        {/* =========================================================
+            HERO SECTION
+        ========================================================= */}
 
-        {/* ================= BACKGROUND ================= */}
+        <main className="sticky top-0 h-screen w-full overflow-hidden bg-[#24231F] text-[#F4F0E8]">
 
-        <div className="pointer-events-none absolute inset-0">
+          {/* ================= BACKGROUND ================= */}
 
-          <div className="absolute left-1/2 top-1/2 h-[750px] w-[750px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#C6A15B]/12 blur-[170px]" />
+          <div className="pointer-events-none absolute inset-0">
 
-          <div className="absolute left-1/2 top-[42%] h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#F4F0E8]/[0.04] blur-[120px]" />
+            <div className="absolute left-1/2 top-1/2 h-[750px] w-[750px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#C6A15B]/12 blur-[170px]" />
 
-          <div className="absolute left-1/2 top-0 h-[350px] w-[900px] -translate-x-1/2 rounded-full bg-[#C6A15B]/[0.07] blur-[130px]" />
+            <div className="absolute left-1/2 top-[42%] h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#F4F0E8]/[0.04] blur-[120px]" />
 
-          <div className="absolute left-[-100px] top-1/2 h-[500px] w-[350px] -translate-y-1/2 rounded-full bg-[#C6A15B]/[0.08] blur-[130px]" />
+            <div className="absolute left-1/2 top-0 h-[350px] w-[900px] -translate-x-1/2 rounded-full bg-[#C6A15B]/[0.07] blur-[130px]" />
 
-          <div className="absolute right-[-100px] top-1/2 h-[500px] w-[350px] -translate-y-1/2 rounded-full bg-[#C6A15B]/[0.08] blur-[130px]" />
+            <div className="absolute left-[-100px] top-1/2 h-[500px] w-[350px] -translate-y-1/2 rounded-full bg-[#C6A15B]/[0.08] blur-[130px]" />
 
-          <div className="absolute inset-0 bg-gradient-to-b from-[#151512]/35 via-transparent to-[#0B0B0B]/60" />
+            <div className="absolute right-[-100px] top-1/2 h-[500px] w-[350px] -translate-y-1/2 rounded-full bg-[#C6A15B]/[0.08] blur-[130px]" />
 
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_25%,rgba(11,11,11,0.28)_100%)]" />
-        </div>
+            <div className="absolute inset-0 bg-gradient-to-b from-[#151512]/35 via-transparent to-[#0B0B0B]/60" />
 
-        {/* ================= LEFT INTRO ================= */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_25%,rgba(11,11,11,0.28)_100%)]" />
 
-        <motion.div
-          initial={{ opacity: 0, x: -80 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 1, delay: 0.3 }}
-          className="absolute left-5 top-[10%] z-50 max-w-[260px] md:left-[6%] md:top-[14%] md:max-w-[340px]"
-        >
-          <p className="mb-3 text-[9px] uppercase tracking-[0.4em] text-[#C6A15B] md:text-[10px]">
-            THE ART OF OUTERWEAR
-          </p>
+          </div>
 
-          <motion.h2
-            initial={{ width: 0 }}
-            animate={{ width: "100%" }}
-            transition={{
-              duration: 1.4,
-              delay: 0.8,
-              ease: "easeInOut",
-            }}
-            className="overflow-hidden whitespace-nowrap text-xl font-light leading-relaxed tracking-wide md:text-3xl"
-          >
-            Elegance in
-          </motion.h2>
-
-          <motion.h2
-            initial={{ width: 0 }}
-            animate={{ width: "100%" }}
-            transition={{
-              duration: 1.4,
-              delay: 2,
-              ease: "easeInOut",
-            }}
-            className="overflow-hidden whitespace-nowrap text-xl font-light leading-relaxed tracking-wide md:text-3xl"
-          >
-            Every Layer.
-          </motion.h2>
-
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{
-              duration: 0.8,
-              delay: 3.3,
-            }}
-            className="mt-4 max-w-[280px] text-[10px] leading-5 tracking-wide text-[#F4F0E8]/60 md:text-xs md:leading-6"
-          >
-            Refined silhouettes, rich textures, and timeless outerwear
-            designed to become an effortless part of your identity.
-          </motion.p>
-        </motion.div>
-
-        {/* ================= RIGHT INTRO ================= */}
-
-        <motion.div
-          initial={{ opacity: 0, x: 80 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 1, delay: 0.5 }}
-          className="absolute right-5 top-[10%] z-50 max-w-[220px] text-right md:right-[6%] md:top-[14%] md:max-w-[340px]"
-        >
-          <p className="mb-3 text-[9px] uppercase tracking-[0.4em] text-[#C6A15B] md:text-[10px]">
-            TIMELESS COLLECTION
-          </p>
-
-          <motion.h2
-            initial={{ width: 0 }}
-            animate={{ width: "100%" }}
-            transition={{
-              duration: 1.4,
-              delay: 1.2,
-              ease: "easeInOut",
-            }}
-            className="ml-auto overflow-hidden whitespace-nowrap text-xl font-light leading-relaxed tracking-wide md:text-3xl"
-          >
-            Designed for
-          </motion.h2>
-
-          <motion.h2
-            initial={{ width: 0 }}
-            animate={{ width: "100%" }}
-            transition={{
-              duration: 1.4,
-              delay: 2.4,
-              ease: "easeInOut",
-            }}
-            className="ml-auto overflow-hidden whitespace-nowrap text-xl font-light leading-relaxed tracking-wide md:text-3xl"
-          >
-            Your Presence.
-          </motion.h2>
-
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{
-              duration: 0.8,
-              delay: 3.6,
-            }}
-            className="ml-auto mt-4 max-w-[280px] text-[10px] leading-5 tracking-wide text-[#F4F0E8]/60 md:text-xs md:leading-6"
-          >
-            From quiet sophistication to commanding presence, every
-            piece is created for those who appreciate detail and
-            distinctive character.
-          </motion.p>
-        </motion.div>
-
-        {/* ================= CENTER BRAND ================= */}
-
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="absolute left-1/2 top-[20%] z-50 -translate-x-1/2 text-center"
-        >
-          <p className="text-[10px] font-medium uppercase tracking-[0.6em] text-[#F4F0E8]/80 md:text-xs">
-            V E L O R A
-          </p>
-        </motion.div>
-
-        {/* ================= IMAGE GALLERY ================= */}
-
-        <div className="absolute inset-0 flex items-center justify-center [perspective:1400px]">
-
-          {/* LEFT GIRL WALLS */}
-
-          {girls.map((image, index) => {
-            const isVisible = index < visibleCount;
-
-            const depth = visibleCount - 1 - index;
-
-            const scaleValues = [1, 0.78, 0.62];
-
-            const xValues = [-390, -335, -285];
-
-            const zValues = [-40, -220, -400];
-
-            const scale = isVisible ? scaleValues[depth] : 0.65;
-            const x = isVisible ? xValues[depth] : 0;
-            const z = isVisible ? zValues[depth] : -500;
-
-            return (
-              <motion.div
-                key={`girl-${index}`}
-                initial={{
-                  opacity: 0,
-                  x: 0,
-                  y: 0,
-                  scale: 0.65,
-                  z: -500,
-                  rotateY: 8,
-                }}
-                animate={{
-                  opacity: isVisible ? 1 : 0,
-                  x,
-                  y: 0,
-                  scale,
-                  z,
-                  rotateY: 8,
-                }}
-                transition={{
-                  duration: 0.9,
-                  ease: [0.22, 1, 0.36, 1],
-                }}
-                className="pointer-events-none absolute left-1/2 top-1/2 h-[390px] w-[285px] overflow-hidden rounded-sm border border-[#C6A15B]/50 shadow-2xl shadow-black/50 sm:h-[440px] sm:w-[315px] md:h-[500px] md:w-[375px] lg:h-[520px] lg:w-[390px]"
-                style={{
-                  marginLeft: "-195px",
-                  marginTop: "-260px",
-                  transformStyle: "preserve-3d",
-                  zIndex: isVisible ? 25 - depth * 5 : 1,
-                }}
-              >
-                <img
-                  src={image}
-                  alt={`Women's luxury outerwear ${index + 1}`}
-                  className="h-full w-full object-cover"
-                />
-
-                {depth > 0 && (
-                  <div className="absolute inset-0 bg-black/10" />
-                )}
-              </motion.div>
-            );
-          })}
-
-          {/* RIGHT BOY WALLS */}
-
-          {boys.map((image, index) => {
-            const isVisible = index < visibleCount;
-
-            const depth = visibleCount - 1 - index;
-
-            const scaleValues = [1, 0.78, 0.62];
-
-            const xValues = [390, 335, 285];
-
-            const zValues = [-40, -220, -400];
-
-            const scale = isVisible ? scaleValues[depth] : 0.65;
-            const x = isVisible ? xValues[depth] : 0;
-            const z = isVisible ? zValues[depth] : -500;
-
-            return (
-              <motion.div
-                key={`boy-${index}`}
-                initial={{
-                  opacity: 0,
-                  x: 0,
-                  y: 0,
-                  scale: 0.65,
-                  z: -500,
-                  rotateY: -8,
-                }}
-                animate={{
-                  opacity: isVisible ? 1 : 0,
-                  x,
-                  y: 0,
-                  scale,
-                  z,
-                  rotateY: -8,
-                }}
-                transition={{
-                  duration: 0.9,
-                  ease: [0.22, 1, 0.36, 1],
-                }}
-                className="pointer-events-none absolute left-1/2 top-1/2 h-[390px] w-[285px] overflow-hidden rounded-sm border border-[#C6A15B]/50 shadow-2xl shadow-black/50 sm:h-[440px] sm:w-[315px] md:h-[500px] md:w-[375px] lg:h-[520px] lg:w-[390px]"
-                style={{
-                  marginLeft: "-195px",
-                  marginTop: "-260px",
-                  transformStyle: "preserve-3d",
-                  zIndex: isVisible ? 25 - depth * 5 : 1,
-                }}
-              >
-                <img
-                  src={image}
-                  alt={`Men's luxury outerwear ${index + 1}`}
-                  className="h-full w-full object-cover"
-                />
-
-                {depth > 0 && (
-                  <div className="absolute inset-0 bg-black/10" />
-                )}
-              </motion.div>
-            );
-          })}
-
-          {/* CENTER IMAGE */}
+          {/* ================= LEFT INTRO ================= */}
 
           <motion.div
-            initial={{
-              opacity: 0,
-              y: 100,
-              scale: 0.9,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-              scale: 1,
-            }}
-            transition={{
-              duration: 1,
-              ease: [0.22, 1, 0.36, 1],
-            }}
-            className="absolute left-1/2 top-1/2 z-30 h-[390px] w-[285px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-sm border border-[#C6A15B]/70 shadow-2xl shadow-black/60 sm:h-[440px] sm:w-[315px] md:h-[500px] md:w-[375px] lg:h-[520px] lg:w-[390px]"
+            initial={{ opacity: 0, x: -80 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 1, delay: 0.3 }}
+            className="absolute left-5 top-[10%] z-50 max-w-[260px] md:left-[6%] md:top-[14%] md:max-w-[340px]"
           >
-            <img
-              src={centerImage}
-              alt="VELORA luxury fashion collection"
-              className="h-full w-full object-cover"
-            />
+            <p className="mb-3 text-[9px] uppercase tracking-[0.4em] text-[#C6A15B] md:text-[10px]">
+              THE ART OF OUTERWEAR
+            </p>
 
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+            <motion.h2
+              initial={{ width: 0 }}
+              animate={{ width: "100%" }}
+              transition={{
+                duration: 1.4,
+                delay: 0.8,
+                ease: "easeInOut",
+              }}
+              className="overflow-hidden whitespace-nowrap text-xl font-light leading-relaxed tracking-wide md:text-3xl"
+            >
+              Elegance in
+            </motion.h2>
+
+            <motion.h2
+              initial={{ width: 0 }}
+              animate={{ width: "100%" }}
+              transition={{
+                duration: 1.4,
+                delay: 2,
+                ease: "easeInOut",
+              }}
+              className="overflow-hidden whitespace-nowrap text-xl font-light leading-relaxed tracking-wide md:text-3xl"
+            >
+              Every Layer.
+            </motion.h2>
+
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.8,
+                delay: 3.3,
+              }}
+              className="mt-4 max-w-[280px] text-[10px] leading-5 tracking-wide text-[#F4F0E8]/60 md:text-xs md:leading-6"
+            >
+              Refined silhouettes, rich textures, and timeless outerwear
+              designed to become an effortless part of your identity.
+            </motion.p>
           </motion.div>
-        </div>
 
-        {/* ================= BOTTOM CONTENT ================= */}
+          {/* ================= RIGHT INTRO ================= */}
 
-        <AnimatePresence>
-          {visibleCount === 0 && (
+          <motion.div
+            initial={{ opacity: 0, x: 80 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 1, delay: 0.5 }}
+            className="absolute right-5 top-[10%] z-50 max-w-[220px] text-right md:right-[6%] md:top-[14%] md:max-w-[340px]"
+          >
+            <p className="mb-3 text-[9px] uppercase tracking-[0.4em] text-[#C6A15B] md:text-[10px]">
+              TIMELESS COLLECTION
+            </p>
+
+            <motion.h2
+              initial={{ width: 0 }}
+              animate={{ width: "100%" }}
+              transition={{
+                duration: 1.4,
+                delay: 1.2,
+                ease: "easeInOut",
+              }}
+              className="ml-auto overflow-hidden whitespace-nowrap text-xl font-light leading-relaxed tracking-wide md:text-3xl"
+            >
+              Designed for
+            </motion.h2>
+
+            <motion.h2
+              initial={{ width: 0 }}
+              animate={{ width: "100%" }}
+              transition={{
+                duration: 1.4,
+                delay: 2.4,
+                ease: "easeInOut",
+              }}
+              className="ml-auto overflow-hidden whitespace-nowrap text-xl font-light leading-relaxed tracking-wide md:text-3xl"
+            >
+              Your Presence.
+            </motion.h2>
+
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.8,
+                delay: 3.6,
+              }}
+              className="ml-auto mt-4 max-w-[280px] text-[10px] leading-5 tracking-wide text-[#F4F0E8]/60 md:text-xs md:leading-6"
+            >
+              From quiet sophistication to commanding presence, every
+              piece is created for those who appreciate detail and
+              distinctive character.
+            </motion.p>
+          </motion.div>
+
+          {/* ================= CENTER BRAND ================= */}
+
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="absolute left-1/2 top-[20%] z-50 -translate-x-1/2 text-center"
+          >
+            <p className="text-[10px] font-medium uppercase tracking-[0.6em] text-[#F4F0E8]/80 md:text-xs">
+              V E L O R A
+            </p>
+          </motion.div>
+
+          {/* ================= IMAGE GALLERY ================= */}
+
+          <div className="absolute inset-0 flex items-center justify-center [perspective:1400px]">
+
+            {/* LEFT GIRL WALLS */}
+
+            {girls.map((image, index) => {
+              const isVisible = index < visibleCount;
+
+              const depth = visibleCount - 1 - index;
+
+              const scaleValues = [1, 0.78, 0.62];
+
+              const xValues = [-390, -335, -285];
+
+              const zValues = [-40, -220, -400];
+
+              const scale = isVisible ? scaleValues[depth] : 0.65;
+              const x = isVisible ? xValues[depth] : 0;
+              const z = isVisible ? zValues[depth] : -500;
+
+              return (
+                <motion.div
+                  key={`girl-${index}`}
+                  initial={{
+                    opacity: 0,
+                    x: 0,
+                    y: 0,
+                    scale: 0.65,
+                    z: -500,
+                    rotateY: 8,
+                  }}
+                  animate={{
+                    opacity: isVisible ? 1 : 0,
+                    x,
+                    y: 0,
+                    scale,
+                    z,
+                    rotateY: 8,
+                  }}
+                  transition={{
+                    duration: 0.9,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
+                  className="pointer-events-none absolute left-1/2 top-1/2 h-[390px] w-[285px] overflow-hidden rounded-sm border border-[#C6A15B]/50 shadow-2xl shadow-black/50 sm:h-[440px] sm:w-[315px] md:h-[500px] md:w-[375px] lg:h-[520px] lg:w-[390px]"
+                  style={{
+                    marginLeft: "-195px",
+                    marginTop: "-260px",
+                    transformStyle: "preserve-3d",
+                    zIndex: isVisible ? 25 - depth * 5 : 1,
+                  }}
+                >
+                  <img
+                    src={image}
+                    alt={`Women's luxury outerwear ${index + 1}`}
+                    className="h-full w-full object-cover"
+                  />
+
+                  {depth > 0 && (
+                    <div className="absolute inset-0 bg-black/10" />
+                  )}
+                </motion.div>
+              );
+            })}
+
+            {/* RIGHT BOY WALLS */}
+
+            {boys.map((image, index) => {
+              const isVisible = index < visibleCount;
+
+              const depth = visibleCount - 1 - index;
+
+              const scaleValues = [1, 0.78, 0.62];
+
+              const xValues = [390, 335, 285];
+
+              const zValues = [-40, -220, -400];
+
+              const scale = isVisible ? scaleValues[depth] : 0.65;
+              const x = isVisible ? xValues[depth] : 0;
+              const z = isVisible ? zValues[depth] : -500;
+
+              return (
+                <motion.div
+                  key={`boy-${index}`}
+                  initial={{
+                    opacity: 0,
+                    x: 0,
+                    y: 0,
+                    scale: 0.65,
+                    z: -500,
+                    rotateY: -8,
+                  }}
+                  animate={{
+                    opacity: isVisible ? 1 : 0,
+                    x,
+                    y: 0,
+                    scale,
+                    z,
+                    rotateY: -8,
+                  }}
+                  transition={{
+                    duration: 0.9,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
+                  className="pointer-events-none absolute left-1/2 top-1/2 h-[390px] w-[285px] overflow-hidden rounded-sm border border-[#C6A15B]/50 shadow-2xl shadow-black/50 sm:h-[440px] sm:w-[315px] md:h-[500px] md:w-[375px] lg:h-[520px] lg:w-[390px]"
+                  style={{
+                    marginLeft: "-195px",
+                    marginTop: "-260px",
+                    transformStyle: "preserve-3d",
+                    zIndex: isVisible ? 25 - depth * 5 : 1,
+                  }}
+                >
+                  <img
+                    src={image}
+                    alt={`Men's luxury outerwear ${index + 1}`}
+                    className="h-full w-full object-cover"
+                  />
+
+                  {depth > 0 && (
+                    <div className="absolute inset-0 bg-black/10" />
+                  )}
+                </motion.div>
+              );
+            })}
+
+            {/* CENTER IMAGE */}
+
             <motion.div
               initial={{
                 opacity: 0,
-                y: 20,
+                y: 100,
+                scale: 0.9,
               }}
               animate={{
                 opacity: 1,
                 y: 0,
-              }}
-              exit={{
-                opacity: 0,
-                y: 20,
+                scale: 1,
               }}
               transition={{
-                duration: 0.6,
+                duration: 1,
+                ease: [0.22, 1, 0.36, 1],
               }}
-              className="absolute bottom-[8%] left-1/2 z-40 w-full -translate-x-1/2 px-4 text-center"
+              className="absolute left-1/2 top-1/2 z-30 h-[390px] w-[285px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-sm border border-[#C6A15B]/70 shadow-2xl shadow-black/60 sm:h-[440px] sm:w-[315px] md:h-[500px] md:w-[375px] lg:h-[520px] lg:w-[390px]"
             >
-              <h1 className="text-3xl font-light uppercase tracking-[0.2em] md:text-5xl">
-                Beyond{" "}
-                <span className="font-semibold text-[#C6A15B]">
-                  Style
-                </span>
-              </h1>
+              <img
+                src={centerImage}
+                alt="VELORA luxury fashion collection"
+                className="h-full w-full object-cover"
+              />
 
-              <p className="mx-auto mt-3 max-w-md text-xs leading-6 text-[#F4F0E8]/75 md:text-sm">
-                Discover timeless outerwear crafted for elegance,
-                individuality, and everyday luxury.
-              </p>
-
-              <div className="mt-5 flex justify-center gap-3">
-
-                <Link
-                  to="/men"
-                  className="group flex items-center gap-2 rounded-sm border border-[#C6A15B] bg-[#C6A15B] px-5 py-3 text-[10px] font-semibold uppercase tracking-widest text-[#0B0B0B] transition-all duration-300 hover:bg-transparent hover:text-[#F4F0E8] md:text-xs"
-                >
-                  Shop Men
-
-                  <FaArrowRight className="transition-transform group-hover:translate-x-1" />
-                </Link>
-
-                <Link
-                  to="/women"
-                  className="group flex items-center gap-2 rounded-sm border border-[#C6A15B] bg-[#C6A15B] px-5 py-3 text-[10px] font-semibold uppercase tracking-widest text-[#0B0B0B] transition-all duration-300 hover:bg-transparent hover:text-[#F4F0E8] md:text-xs"
-                >
-                  Shop Women
-
-                  <FaArrowRight className="transition-transform group-hover:translate-x-1" />
-                </Link>
-
-              </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
             </motion.div>
-          )}
-        </AnimatePresence>
+          </div>
 
-        {/* ================= COLLECTION LABEL ================= */}
+          {/* ================= BOTTOM CONTENT ================= */}
 
-        <AnimatePresence>
-          {visibleCount > 0 && (
-            <motion.div
-              initial={{
-                opacity: 0,
-                y: 20,
-              }}
-              animate={{
-                opacity: 1,
-                y: 0,
-              }}
-              exit={{
-                opacity: 0,
-                y: 20,
-              }}
-              className="absolute bottom-10 left-1/2 z-40 -translate-x-1/2 text-center"
-            >
-              <p className="text-xs uppercase tracking-[0.5em] text-[#F4F0E8]">
-                The VELORA Collection
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+          <AnimatePresence>
+            {visibleCount === 0 && (
+              <motion.div
+                initial={{
+                  opacity: 0,
+                  y: 20,
+                }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                }}
+                exit={{
+                  opacity: 0,
+                  y: 20,
+                }}
+                transition={{
+                  duration: 0.6,
+                }}
+                className="absolute bottom-[8%] left-1/2 z-40 w-full -translate-x-1/2 px-4 text-center"
+              >
+                <h1 className="text-3xl font-light uppercase tracking-[0.2em] md:text-5xl">
+                  Beyond{" "}
+                  <span className="font-semibold text-[#C6A15B]">
+                    Style
+                  </span>
+                </h1>
 
-        {/* ================= EXPLORE BUTTON ================= */}
+                <p className="mx-auto mt-3 max-w-md text-xs leading-6 text-[#F4F0E8]/75 md:text-sm">
+                  Discover timeless outerwear crafted for elegance,
+                  individuality, and everyday luxury.
+                </p>
 
-        <button
-          type="button"
-          onClick={handleExplore}
-          aria-label={
-            visibleCount === 3
-              ? "Reset collection"
-              : "Explore collection"
-          }
-          className="absolute bottom-5 left-1/2 z-50 flex -translate-x-1/2 flex-col items-center gap-2 text-[#F4F0E8]/80 transition-all duration-300 hover:text-[#C6A15B]"
-        >
-          <span className="text-[9px] uppercase tracking-[0.35em]">
-            {visibleCount === 0
-              ? "Explore"
-              : visibleCount === 3
-              ? "Back"
-              : "Next"}
-          </span>
+                <div className="mt-5 flex justify-center gap-3">
 
-          <motion.span
-            animate={{
-              y: [0, 5, 0],
-            }}
-            transition={{
-              duration: 1.5,
-              repeat: Infinity,
-            }}
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-[#C6A15B]/60 bg-[#C6A15B]/10 backdrop-blur-sm"
+                  <Link
+                    to="/men"
+                    className="group flex items-center gap-2 rounded-sm border border-[#C6A15B] bg-[#C6A15B] px-5 py-3 text-[10px] font-semibold uppercase tracking-widest text-[#0B0B0B] transition-all duration-300 hover:bg-transparent hover:text-[#F4F0E8] md:text-xs"
+                  >
+                    Shop Men
+
+                    <FaArrowRight className="transition-transform group-hover:translate-x-1" />
+                  </Link>
+
+                  <Link
+                    to="/women"
+                    className="group flex items-center gap-2 rounded-sm border border-[#C6A15B] bg-[#C6A15B] px-5 py-3 text-[10px] font-semibold uppercase tracking-widest text-[#0B0B0B] transition-all duration-300 hover:bg-transparent hover:text-[#F4F0E8] md:text-xs"
+                  >
+                    Shop Women
+
+                    <FaArrowRight className="transition-transform group-hover:translate-x-1" />
+                  </Link>
+
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* ================= COLLECTION LABEL ================= */}
+
+          <AnimatePresence>
+            {visibleCount > 0 && (
+              <motion.div
+                initial={{
+                  opacity: 0,
+                  y: 20,
+                }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                }}
+                exit={{
+                  opacity: 0,
+                  y: 20,
+                }}
+                className="absolute bottom-10 left-1/2 z-40 -translate-x-1/2 text-center"
+              >
+                <p className="text-xs uppercase tracking-[0.5em] text-[#F4F0E8]">
+                  The VELORA Collection
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* ================= STATIC SCROLL INDICATOR ================= */}
+
+          <div
+            className="absolute bottom-5 left-1/2 z-50 flex -translate-x-1/2 flex-col items-center gap-2 text-[#F4F0E8]/80"
           >
-            <FaChevronDown
-              className={`text-xs transition-transform duration-300 ${
-                visibleCount === 3 ? "rotate-180" : ""
-              }`}
-            />
-          </motion.span>
-        </button>
-      </main>
+            <span className="text-[9px] uppercase tracking-[0.35em]">
+              {visibleCount === 0
+                ? "Explore"
+                : visibleCount === 3
+                ? "Back"
+                : "Next"}
+            </span>
+
+            <motion.span
+              animate={{
+                y: [0, 5, 0],
+              }}
+              transition={{
+                duration: 1.5,
+                repeat: Infinity,
+              }}
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-[#C6A15B]/60 bg-[#C6A15B]/10 backdrop-blur-sm"
+            >
+              <FaChevronDown
+                className={`text-xs transition-transform duration-300 ${
+                  visibleCount === 3 ? "rotate-180" : ""
+                }`}
+              />
+            </motion.span>
+          </div>
+
+        </main>
+      </section>
 
       {/* =========================================================
           THE OUTERWEAR EDIT
@@ -1225,7 +1286,7 @@ const Home: React.FC = () => {
                 </p>
 
                 <Link
-                  to="/collection"
+                  to="/Men"
                   className="mt-5 inline-flex items-center gap-2 text-[9px] uppercase tracking-[0.3em] text-[#F4F0E8]/70 transition-colors duration-300 hover:text-[#C6A15B]"
                 >
                   Explore
@@ -1296,7 +1357,7 @@ const Home: React.FC = () => {
                 </p>
 
                 <Link
-                  to="/collection"
+                  to="/women"
                   className="mt-5 inline-flex items-center gap-2 text-[9px] uppercase tracking-[0.3em] text-[#F4F0E8]/70 transition-colors duration-300 hover:text-[#C6A15B]"
                 >
                   Explore
@@ -1352,15 +1413,9 @@ const Home: React.FC = () => {
 
         <div className="pointer-events-none absolute inset-0">
 
-          {/* Center gold glow */}
-
           <div className="absolute left-1/2 top-1/2 h-[550px] w-[550px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#C6A15B]/[0.045] blur-[150px]" />
 
-          {/* Left glow */}
-
           <div className="absolute left-[-150px] top-[20%] h-[400px] w-[400px] rounded-full bg-[#C6A15B]/[0.035] blur-[140px]" />
-
-          {/* Right glow */}
 
           <div className="absolute bottom-[-100px] right-[-100px] h-[400px] w-[400px] rounded-full bg-[#C6A15B]/[0.035] blur-[140px]" />
 
@@ -1671,9 +1726,9 @@ const Home: React.FC = () => {
         </motion.div>
 
       </section>
-
     </>
   );
 };
 
 export default Home;
+
