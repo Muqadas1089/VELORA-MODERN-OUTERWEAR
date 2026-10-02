@@ -484,10 +484,10 @@ const Categories: React.FC = () => {
                   }}
                   className="group"
                 >
-                  <Link
-                    to="/products"
-                    className="relative block overflow-hidden bg-[#E9E3D9]"
-                  >
+<Link
+  to={product.gender === "Men" ? "/Men" : "/women"}
+  className="relative block overflow-hidden bg-[#E9E3D9]"
+>
                     <div className="relative h-[370px] overflow-hidden sm:h-[400px]">
                       <motion.img
                         src={product.image}
@@ -525,7 +525,7 @@ const Categories: React.FC = () => {
 
                   <button
                     onClick={() =>
-                      (window.location.href = "/products")
+                      (window.location.href = "/Men")
                     }
                     className="mt-4 flex items-center gap-3 border-b border-[#0B0B0B]/20 pb-2 text-[9px] tracking-[0.25em] transition-all duration-300 hover:border-[#A78342] hover:text-[#A78342]"
                   >

@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import {
   BrowserRouter,
@@ -20,6 +19,7 @@ import Men from "../PAGES/Men";
 import Women from "../PAGES/Women";
 import Categories from "../PAGES/Categories";
 import OurTeam from "../PAGES/OurTeam";
+import Checkout from "../PAGES/Checkout";
 
 // Temporary pages
 const Products = () => <div>Products</div>;
@@ -60,16 +60,28 @@ const App: React.FC = () => {
           <Route path="/women" element={<Women />} />
 
           {/* CATEGORIES */}
-          <Route path="/categories" element={<Categories />} />
+          <Route
+            path="/categories"
+            element={<Categories />}
+          />
 
           {/* OUR TEAM */}
-          <Route path="/our-team" element={<OurTeam />} />
+          <Route
+            path="/our-team"
+            element={<OurTeam />}
+          />
 
           {/* PRODUCTS */}
-          <Route path="/products" element={<Products />} />
+          <Route
+            path="/products"
+            element={<Products />}
+          />
 
           {/* SERVICES */}
-          <Route path="/services" element={<Services />} />
+          <Route
+            path="/services"
+            element={<Services />}
+          />
 
           {/* TRACK ORDER */}
           <Route
@@ -79,6 +91,12 @@ const App: React.FC = () => {
 
           {/* CART */}
           <Route path="/cart" element={<Cart />} />
+
+          {/* CHECKOUT */}
+          <Route
+            path="/checkout"
+            element={<Checkout />}
+          />
 
           {/* LOGIN */}
           <Route path="/login" element={<Login />} />
@@ -97,4 +115,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-
