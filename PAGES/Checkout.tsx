@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { motion } from "motion/react";
 import {
   FaArrowLeft,
@@ -18,10 +18,8 @@ const Checkout: React.FC = () => {
     removeFromCart,
     updateQuantity,
     total,
-    clearCart,
+    placeOrder,
   } = useCart();
-
-  const navigate = useNavigate();
 
   const [form, setForm] = useState({
     fullName: "",
@@ -34,7 +32,6 @@ const Checkout: React.FC = () => {
 
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
-
   const [error, setError] = useState("");
 
   const handleChange = (
@@ -52,18 +49,30 @@ const Checkout: React.FC = () => {
     e: React.FormEvent<HTMLFormElement>
   ) => {
     e.preventDefault();
+    setError("");
 
     if (cartItems.length === 0) {
       setError("Your cart is empty.");
       return;
     }
 
-    const newOrderNumber =
-      "VEL-" + Date.now().toString().slice(-8);
+    const order = placeOrder({
+      fullName: form.fullName,
+      email: form.email,
+      phone: form.phone,
+      address: form.address,
+      city: form.city,
+      postalCode: form.postalCode,
+      paymentMethod: "Cash on Delivery",
+    });
 
-    setOrderNumber(newOrderNumber);
+    if (!order) {
+      setError("Unable to place order. Your cart is empty.");
+      return;
+    }
+
+    setOrderNumber(order.orderNumber);
     setOrderPlaced(true);
-    clearCart();
   };
 
   if (orderPlaced) {
